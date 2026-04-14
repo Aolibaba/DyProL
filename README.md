@@ -20,7 +20,7 @@ In addition to structural inputs, DyProL can incorporate sequence-derived featur
 
 ## Dataset Release
 
-The full `Datasets/` directory will be released on Zenodo and should be placed at the repository root after download.
+The full `Datasets/` directory will be released on [Zenodo](https://zenodo.org/records/19547616) and should be placed at the repository root after download.
 
 ### Dataset Sources
 
@@ -122,20 +122,6 @@ Train on GraphBind:
 python train.py --data_source graphbind --ligand DNA --dynamic_mode dynamic --use_llm True --use_msa True --use_pssm True --use_token True
 ```
 
-## Prediction
-
-The `predict.py` script provides an inference pipeline for residue-level binding-site prediction.
-
-Example usage:
-
-```bash
-python predict.py \
-  --ligand DNA \
-  --data_source graphbind \
-  --model_type dynamic \
-  --data_type dynamic \
-  --ensemble BioEmu
-```
 
 ## Configuration Guide
 
@@ -165,16 +151,6 @@ The most important runtime options are defined in `Arguments.py`:
 - Use `dynamic_mode=dynamic` for the main benchmark setup
 - Sequence features may be enabled depending on the experiment: `use_token`, `use_llm`, `use_msa`, `use_pssm`
 - `static` mode is available in the code for controlled comparisons, but the primary benchmark setting is dynamic
-
-## Reproducibility
-
-- Random seed is controlled by `--seed`
-- Batch size, learning rate, and model width are configurable through `Arguments.py`
-- The default training loop writes logs and checkpoints into `Checkpoints/`
-
-## Citation
-
-If you use DyProL in your work, please cite the associated paper.
 
 ## Contact
 
