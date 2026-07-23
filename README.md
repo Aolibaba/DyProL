@@ -1,157 +1,93 @@
 # DyProL
 
-DyProL is a dynamic protein representation learning framework for protein-nucleic acid binding-site prediction.  
-Instead of relying on a single static protein structure, DyProL models each protein as a conformational ensemble and learns geometry-aware representations across multiple states.
+DyProL is a dynamic protein representation learning framework for residue-level protein-nucleic acid binding-site prediction.
+
+This cleaned version keeps one supported training path only:
+
+- dataset: `GraphBind`
+- structure input: BioEmu conformational ensembles
+- features: residue token, ESM/LLM embedding, MSA feature, and PSSM feature
+- task: DNA-binding or RNA-binding residue prediction
 
 ![DyProL overview](fig/Fig.png)
 
-## Overview
+## Dataset
 
-DyProL is designed for residue-level binding-site prediction on:
-- DNA-binding proteins
-- RNA-binding proteins
+Download the dataset package from Zenodo and place the resulting `Datasets/` folder at the repository root:
 
-The framework supports both:
-- `dynamic` mode: uses conformational ensembles
-- `static` mode: uses a single structure
+https://zenodo.org/records/19547616
 
-In addition to structural inputs, DyProL can incorporate sequence-derived features when working with the `GraphBind` data source.
-
-
-## Dataset Release
-
-The full `Datasets/` directory will be released on [Zenodo](https://zenodo.org/records/19547616) and should be placed at the repository root after download.
-
-### Dataset Sources
-
-DyProL currently supports two benchmark settings:
-
-- `DyProL`: the dynamic ensemble dataset used in the main experiments
-- `GraphBind`: the public benchmark dataset used for cross-dataset evaluation
-
-### Data Layout
-
-The expected directory structure is:
+The retained code path expects this layout:
 
 ```text
 Datasets/
-├── DyProL/
-│   ├── DNA/
-│   │   ├── DNA-1022_Train.txt
-│   │   ├── DNA-256_Test.txt
-│   │   ├── PDB/
-│   │   └── BioEmu/ or other ensemble folders
-│   └── RNA/
-│       ├── RNA-932_Train.txt
-│       ├── RNA-234_Test.txt
-│       ├── PDB/
-│       └── BioEmu/ or other ensemble folders
 └── GraphBind/
     ├── DNA/
     │   ├── DNA-573_Train.txt
     │   ├── DNA-129_Test.txt
-    │   ├── PDB/
     │   ├── BioEmu/
+    │   │   └── <protein_id>/
+    │   │       ├── samples.xtc
+    │   │       └── topology.pdb
     │   └── ESM_MSA_PSSM/
+    │       ├── <protein_id>.rep_5120.npy
+    │       ├── <protein_id>msa_first_row.npy
+    │       ├── <protein_id>.fasta
+    │       └── <protein_id>.pssm
     └── RNA/
         ├── RNA-495_Train.txt
         ├── RNA-117_Test.txt
-        ├── PDB/
         ├── BioEmu/
         └── ESM_MSA_PSSM/
 ```
 
-### What the data contain
-
-- `PDB/`: protein structure files used as the structural input
-- `BioEmu/`: conformational ensembles sampled for dynamic modeling
-- `ESM_MSA_PSSM/`: sequence-derived features used by `GraphBind`
-- `*_Train.txt` and `*_Test.txt`: dataset split files for training and evaluation
-
-### Notes on the Zenodo package
-
-- The Zenodo archive should contain the complete `Datasets/` folder.
-- After downloading, place the folder directly under the project root so that paths such as `./Datasets/DyProL/DNA/PDB` resolve correctly.
-- Large ensemble files are expected to remain outside source code history and be distributed through Zenodo instead.
+Other dataset sources, static-structure mode, alternative ensemble formats, and feature-disable switches have been removed.
 
 ## Installation
 
-This project is implemented in Python with PyTorch. Install the required dependencies in your preferred environment before running training or inference.
+Install the Python dependencies in your training environment:
 
-If you already have the dependencies configured, no additional project-specific installation step is required.
+```bash
+pip install -r requirements.txt
+```
+
+`torch-scatter` wheels are tied to the installed PyTorch and CUDA versions. If the generic installation fails, install the matching wheel from the official PyTorch Geometric wheel index for your environment.
+
+This project expects the NumPy 1.x ABI (`numpy<2`) because PyTorch, MDAnalysis, and other compiled scientific packages must be built against a compatible NumPy version.
 
 ## Training
 
-The main training entry point is `train.py`.
-
-### Default training setup
-
-By default, the code uses:
-
-- `data_source = dyprol`
-- `dynamic_mode = dynamic`
-- `ligand = DNA`
-- `ensemble = ESMFlow`
-
-For the dynamic DyProL experiments reported in the paper, you will typically want to set:
-
-- `data_source=dyprol`
-- `dynamic_mode=dynamic`
-- `use_token=True`
-- `use_llm=False`
-- `use_msa=False`
-- `use_pssm=False`
-
-### Example commands
-
-Train on the DyProL DNA dataset:
+Train on GraphBind DNA:
 
 ```bash
-python train.py --data_source dyprol --ligand DNA --dynamic_mode dynamic --ensemble BioEmu
+python train.py --ligand DNA
 ```
 
-Train on the DyProL RNA dataset:
+Train on GraphBind RNA:
 
 ```bash
-python train.py --data_source dyprol --ligand RNA --dynamic_mode dynamic --ensemble BioEmu
+python train.py --ligand RNA
 ```
 
-Train on GraphBind:
+For a quick data-loading check:
 
 ```bash
-python train.py --data_source graphbind --ligand DNA --dynamic_mode dynamic --use_llm True --use_msa True --use_pssm True --use_token True
+python train.py --ligand DNA --max_samples 2
 ```
 
+## Options
 
-## Configuration Guide
-
-The most important runtime options are defined in `Arguments.py`:
+The remaining runtime options are intentionally narrow:
 
 - `--ligand`: `DNA` or `RNA`
-- `--data_source`: `dyprol` or `graphbind`
-- `--dynamic_mode`: `dynamic` or `static`
-- `--ensemble`: `BioEmu`, `ESMFlow`, `ALphaFlow`, or `ESMDiff`
-- `--use_token`: residue token features
-- `--use_llm`: language model embeddings
-- `--use_msa`: MSA features
-- `--use_pssm`: PSSM features
-- `--n_cluster`: number of representative conformations used for dynamic modeling
+- `--n_cluster`: representative BioEmu conformations selected per protein
+- `--device`: training device, for example `cpu` or `cuda:0`
+- `--batch_size`: proteins per batch
+- `--emb_dims`: hidden feature dimension
+- `--n_layers_structure`: number of geometric attention layers
+- `--lr`: learning rate
+- `--seed`: random seed
+- `--checkpoints_dir`: optional output directory
+- `--max_samples`: optional debug sample limit
 
-### Recommended settings
-
-#### DyProL dataset
-
-- Use `dynamic_mode=dynamic`
-- Use `use_token=True`
-- Keep `use_llm=False`, `use_msa=False`, and `use_pssm=False`
-- Set `ensemble=BioEmu` for dynamic ensemble construction
-
-#### GraphBind dataset
-
-- Use `dynamic_mode=dynamic` for the main benchmark setup
-- Sequence features may be enabled depending on the experiment: `use_token`, `use_llm`, `use_msa`, `use_pssm`
-- `static` mode is available in the code for controlled comparisons, but the primary benchmark setting is dynamic
-
-## Contact
-
-If you have questions about the code, data layout, or reproducing the experiments, please open an issue or contact the authors.
+The model always loads token, ESM/LLM, MSA, and PSSM features and fuses them by concatenation.

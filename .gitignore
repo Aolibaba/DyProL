@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.idea/
+venv/
+.venv/
+
+Datasets/*
+!Datasets/README.md
+
+Checkpoints/
+runs/
+wandb/
+
+.DS_Store

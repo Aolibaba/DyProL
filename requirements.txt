@@ -1,0 +1,9 @@
+biopython
+joblib
+MDAnalysis
+numpy<2
+scikit-learn
+scipy
+torch
+torch-scatter
+tqdm
